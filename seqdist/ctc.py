@@ -145,10 +145,10 @@ def _fwd_bwd_ab(alpha, beta, state_scores, repeat_mask, input_lengths, S:semirin
                args=(alpha_T.data_ptr(), alpha.data_ptr(), beta.data_ptr(),
                      state_scores.data_ptr(), repeat_mask.data_ptr(),
                      input_lengths.data_ptr(), N, Lp))
-    return alpha, beta
+    return alpha
 
 def ab_cupy(logits, targets, input_lengths, target_lengths):
-    return fwd_bwd(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_ab, Log)
+    return fwd_bwd(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_ab, Log)[:2]
 
 def loss_cupy(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
