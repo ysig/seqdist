@@ -81,7 +81,9 @@ def fwd_bwd(state_scores, repeat_mask, final_states, input_lengths, fwd_bwd_impl
     alpha_T = fwd_bwd_impl(alpha, beta, state_scores, repeat_mask, input_lengths, S)
     print(alpha_T.size())
     print(final_states.size())
-    logz = S.sum(alpha_T.gather(1, final_states), dim=1)
+    logz = alpha_T.gather(1, final_states)
+    print(logz.size())
+    logz = S.sum(logz, dim=1)
     return alpha, beta, logz
 
 def fwd_bwd_ab(state_scores, repeat_mask, final_states, input_lengths, fwd_bwd_impl, S:semiring=Log):
