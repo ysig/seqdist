@@ -135,7 +135,20 @@ def _fwd_bwd_cupy(alpha, beta, state_scores, repeat_mask, input_lengths, S:semir
         cupy_funcs[(state_scores.dtype, S)](grid=(N, 2, 1), block=(Lp, 1, 1), shared_mem=2*8*Lp,
                args=(alpha_T.data_ptr(), alpha.data_ptr(), beta.data_ptr(), state_scores.data_ptr(), repeat_mask.data_ptr(),
                      input_lengths.data_ptr(), N, Lp))
-    return alpha_T
+    return alpha
+
+def _fwd_bwd_cupy_ab(alpha, beta, state_scores, repeat_mask, input_lengths, S:semiring):
+    T, N, Lp = state_scores.shape
+    alpha_T = torch.empty_like(alpha[0])
+    with cp.cuda.Device(state_scores.device.index):
+        cupy_funcs[(state_scores.dtype, S)](grid=(N, 2, 1), block=(Lp, 1, 1), shared_mem=2*8*Lp,
+               args=(alpha_T.data_ptr(), alpha.data_ptr(), beta.data_ptr(),
+                     state_scores.data_ptr(), repeat_mask.data_ptr(),
+                     input_lengths.data_ptr(), N, Lp))
+    return alpha, beta
+
+def ab_cupy(logits, targets, input_lengths, target_lengths):
+    return _fwd_bwd_cupy_ab(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), Log)
 
 def loss_cupy(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
