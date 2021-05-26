@@ -82,6 +82,14 @@ def fwd_bwd(state_scores, repeat_mask, final_states, input_lengths, fwd_bwd_impl
     logz = S.sum(alpha_T.gather(1, final_states), dim=1)
     return alpha, beta, logz
 
+def fwd_bwd_ab(state_scores, repeat_mask, final_states, input_lengths, fwd_bwd_impl, S:semiring=Log):
+    T, N, Lp = state_scores.shape
+    alpha, beta = [state_scores.new_full((T+1, N, Lp), S.zero) for _ in range(2)]
+    alpha[0, :, 0] = S.one
+    beta[input_lengths, torch.arange(N)] = state_scores.new_full((N, Lp), S.zero).scatter_(1, final_states, S.one)
+    fwd_bwd_impl(alpha, beta, state_scores, repeat_mask, input_lengths, S)
+    return alpha, beta
+
 def _fwd_bwd_py(alpha, beta, state_scores, repeat_mask, input_lengths, S:semiring=Log):
     T, N, Lp = state_scores.shape
     zeros = alpha.new_full((1,), S.zero)
@@ -148,7 +156,7 @@ def _fwd_bwd_ab(alpha, beta, state_scores, repeat_mask, input_lengths, S:semirin
     return alpha
 
 def ab_cupy(logits, targets, input_lengths, target_lengths):
-    return fwd_bwd(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_ab, Log)[:2]
+    return fwd_bwd_ab(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_ab, Log)
 
 def loss_cupy(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
