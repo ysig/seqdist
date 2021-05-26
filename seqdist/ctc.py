@@ -79,10 +79,10 @@ def fwd_bwd(state_scores, repeat_mask, final_states, input_lengths, fwd_bwd_impl
     alpha[0, :, 0] = S.one
     beta[input_lengths, torch.arange(N)] = state_scores.new_full((N, Lp), S.zero).scatter_(1, final_states, S.one)
     alpha_T = fwd_bwd_impl(alpha, beta, state_scores, repeat_mask, input_lengths, S)
-    print(alpha_T.size())
-    print(final_states.size())
+    print('alpha_T.size()', alpha_T.size())
+    print('final_states.size()', final_states.size())
     logz = alpha_T.gather(1, final_states)
-    print(logz.size())
+    print('logz.size()', logz.size())
     logz = S.sum(logz, dim=1)
     return alpha, beta, logz
 
