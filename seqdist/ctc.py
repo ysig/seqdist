@@ -148,7 +148,7 @@ def _fwd_bwd_ab(alpha, beta, state_scores, repeat_mask, input_lengths, S:semirin
     return alpha, beta
 
 def ab_cupy(logits, targets, input_lengths, target_lengths):
-    return _fwd_bwd_ab(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), Log)
+    return fwd_bwd(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_ab, Log)
 
 def loss_cupy(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
