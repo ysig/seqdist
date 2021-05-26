@@ -160,7 +160,7 @@ def ab_cupy(logits, targets, input_lengths, target_lengths):
 
 def loss_cupy(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
-    return - (logz / target_lengths).mean()
+    return logz#- (logz / target_lengths).mean()
 
 def loss_cupy2(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs2(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
