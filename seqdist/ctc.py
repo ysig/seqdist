@@ -49,6 +49,13 @@ def prepare_inputs(scores, targets, input_lengths, target_lengths):
     final_states = torch.stack([target_lengths*2-1, target_lengths*2], 1)
     return state_scores, repeat_mask, final_states, input_lengths
 
+def prepare_inputs_states(scores, targets, input_lengths, target_lengths):
+    states = interleave_blanks(targets, blank_idx=0)
+    state_scores = torch.gather(scores, 2, states.expand(scores.size(0), -1, -1))
+    repeat_mask = torch.nn.functional.pad(states[:, 2:] == states[:, :-2], (2, 0), value=0.)
+    final_states = torch.stack([target_lengths*2-1, target_lengths*2], 1)
+    return state_scores, repeat_mask, final_states, input_lengths, states
+
 def prepare_inputs2(scores, targets, input_lengths, target_lengths):
     states = interleave_blanks(targets, blank_idx=0)
     state_scores = torch.gather(scores, 2, states.expand(scores.size(0), -1, -1))
@@ -155,7 +162,9 @@ def _fwd_bwd_ab(alpha, beta, state_scores, repeat_mask, input_lengths, S:semirin
                      input_lengths.data_ptr(), N, Lp))
 
 def ab_cupy(logits, targets, input_lengths, target_lengths):
-    return fwd_bwd_ab(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_ab, Log)
+    out = prepare_inputs_states(logits.log_softmax(2), targets, input_lengths, target_lengths)
+    a, b = fwd_bwd_ab(*out[:-1], _fwd_bwd_ab, Log)
+    return a, b, out[-1]
 
 def loss_cupy(logits, targets, input_lengths, target_lengths):
     logz = _Logz.apply(*prepare_inputs(logits.log_softmax(2), targets, input_lengths, target_lengths), _fwd_bwd_cupy, Log)
